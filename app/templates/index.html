@@ -91,6 +91,8 @@
 <div class="point-list-heading"><h2 class="h5 mb-0">Puntos de reciclaje</h2><span class="badge counter-badge" aria-label="{{ puntos|length }} resultados">{{ puntos|length }}</span></div>
 <div class="point-list">
 {% for punto in puntos %}
+    {# puntos_mapa sigue el mismo orden de puntos y de contenedores activos por código. #}
+    {% set datos_punto = puntos_mapa[loop.index0] %}
     <div>
         <article class="card h-100" data-punto-id="{{ punto.id }}">
             <div class="card-body">
@@ -117,11 +119,13 @@
                 </ul>
                 <h3 class="visually-hidden">Contenedores</h3>
                 {% for contenedor in punto.contenedores|selectattr('activo')|sort(attribute='codigo') %}
+                {% set en_linea = datos_punto.contenedores[loop.index0].en_linea %}
                 <div class="container-status mb-2" data-contenedor-codigo="{{ contenedor.codigo }}">
-                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2"><strong class="small">{{ contenedor.codigo }}</strong><span class="badge status-badge {{ {'Disponible': 'state-disponible', 'Medio': 'state-medio', 'Casi lleno': 'state-casi', 'Lleno': 'state-lleno'}.get(contenedor.estado, 'state-neutral') }}" data-campo="estado">{{ contenedor.estado }}</span></div>
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2"><strong class="small">{{ contenedor.codigo }}</strong><span class="badge status-badge {{ {'Disponible': 'state-disponible', 'Medio': 'state-medio', 'Casi lleno': 'state-casi', 'Lleno': 'state-lleno'}.get(contenedor.estado, 'state-neutral') if en_linea else 'state-neutral' }}" data-campo="estado">{{ contenedor.estado if en_linea else 'Sin conexión' }}</span></div>
+                    <p class="small text-secondary mb-2 container-update" data-campo="ultimo-dato"{% if en_linea %} hidden{% endif %}>Último dato: {% if contenedor.ultima_actualizacion %}{{ contenedor.ultima_actualizacion|fecha_chile }}{% else %}sin registro{% endif %}</p>
                     <p class="small mb-2">Llenado: <strong data-campo="porcentaje">{% if contenedor.porcentaje_llenado is not none %}{{ contenedor.porcentaje_llenado|round(1) }}%{% else %}Sin datos{% endif %}</strong></p>
                     {{ progress(contenedor.porcentaje_llenado, contenedor.estado) }}
-                    <p class="small text-secondary mt-2 mb-0 container-update">Última actualización: <span data-campo="fecha">{% if contenedor.ultima_actualizacion %}{{ contenedor.ultima_actualizacion|fecha_chile }}{% else %}Sin actualización registrada{% endif %}</span></p>
+                    <p class="small text-secondary mt-2 mb-0 container-update">Última actualización: <span data-campo="fecha">{% if contenedor.ultima_actualizacion %}{{ contenedor.ultima_actualizacion|fecha_chile }}{% else %}Sin actualización registrada{% endif %}</span> <span data-campo="hace"></span></p>
                 </div>
                 {% else %}<p>Sin contenedores activos registrados.</p>{% endfor %}
             </div>

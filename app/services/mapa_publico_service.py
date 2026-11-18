@@ -1,6 +1,9 @@
 """Serialización pública del resultado ya filtrado, sin consultas adicionales."""
 
+from datetime import datetime, timezone
 from math import isfinite
+
+from app.services.panel_service import conectividad
 
 
 def coordenada_valida(valor, limite):
@@ -11,7 +14,14 @@ def coordenada_valida(valor, limite):
     return numero if isfinite(numero) and -limite <= numero <= limite else None
 
 
+def en_linea(contenedor, ahora):
+    """Solo un booleano: no se expone ningún dato del dispositivo."""
+    dispositivo = next((d for d in contenedor.dispositivos if d.activo), None)
+    return conectividad(dispositivo, ahora) == "ONLINE"
+
+
 def datos_mapa_publico(puntos):
+    ahora = datetime.now(timezone.utc)
     datos = []
     for punto in puntos:
         latitud = coordenada_valida(punto.latitud, 90)
@@ -27,6 +37,7 @@ def datos_mapa_publico(puntos):
                 "porcentaje_llenado": contenedor.porcentaje_llenado,
                 "ultima_actualizacion": (contenedor.ultima_actualizacion.isoformat() + "Z"
                                           if contenedor.ultima_actualizacion else None),
+                "en_linea": en_linea(contenedor, ahora),
             } for contenedor in sorted(punto.contenedores, key=lambda c: c.codigo) if contenedor.activo],
         })
     return datos

@@ -19,6 +19,19 @@
         return `${partes.day}-${partes.month}-${partes.year} ${partes.hour}:${partes.minute}:${partes.second}`;
     }
 
+    function haceCuanto(valor) {
+        if (!valor) return null;
+        const fecha = new Date(valor);
+        if (Number.isNaN(fecha.getTime())) return null;
+        const minutos = Math.floor(Math.max(0, Date.now() - fecha.getTime()) / 60000);
+        if (minutos < 1) return "hace menos de 1 min";
+        if (minutos < 60) return `hace ${minutos} min`;
+        const horas = Math.floor(minutos / 60);
+        if (horas < 24) return `hace ${horas} h`;
+        const dias = Math.floor(horas / 24);
+        return `hace ${dias} ${dias === 1 ? "día" : "días"}`;
+    }
+
     const contenedor = document.getElementById("mapa-publico");
     const datos = document.getElementById("datos-mapa-publico");
     const aviso = document.getElementById("mapa-aviso");
@@ -48,7 +61,8 @@
         for (const c of punto.contenedores) {
             const porcentaje = Number.isFinite(c.porcentaje_llenado)
                 ? `${c.porcentaje_llenado.toFixed(1)}%` : "Sin datos de llenado";
-            contenido.append(parrafo(`${c.codigo}: ${c.estado || "Sin estado"} · ${porcentaje}`));
+            const estado = c.en_linea === false ? "Sin conexión" : (c.estado || "Sin estado");
+            contenido.append(parrafo(`${c.codigo}: ${estado} · ${porcentaje}`));
         }
         if (!punto.contenedores.length) contenido.append(parrafo("Sin contenedores activos registrados."));
         return contenido;
@@ -129,8 +143,10 @@
                 const c = porCodigo.get(bloque.dataset.contenedorCodigo);
                 bloque.hidden = !c;
                 if (!c) continue;
-                bloque.querySelector('[data-campo="estado"]').textContent = c.estado || "Sin estado";
-                bloque.querySelector('[data-campo="estado"]').className = `badge status-badge ${colores[c.estado] || "state-neutral"}`;
+                const sinConexion = c.en_linea === false;
+                const estado = bloque.querySelector('[data-campo="estado"]');
+                estado.textContent = sinConexion ? "Sin conexión" : (c.estado || "Sin estado");
+                estado.className = `badge status-badge ${sinConexion ? "state-neutral" : (colores[c.estado] || "state-neutral")}`;
                 bloque.querySelector('[data-campo="porcentaje"]').textContent = Number.isFinite(c.porcentaje_llenado)
                     ? `${c.porcentaje_llenado.toFixed(1)}%` : "Sin datos";
                 const progreso = bloque.querySelector('[data-campo="progreso"]');
@@ -147,11 +163,21 @@
                 }
                 bloque.querySelector('[data-campo="fecha"]').textContent =
                     fechaChile(c.ultima_actualizacion) || "Sin actualización registrada";
+                const hace = haceCuanto(c.ultima_actualizacion);
+                const actualizado = bloque.querySelector('[data-campo="hace"]');
+                if (actualizado) actualizado.textContent = hace ? `· Actualizado ${hace}` : "";
+                const ultimoDato = bloque.querySelector('[data-campo="ultimo-dato"]');
+                if (ultimoDato) {
+                    ultimoDato.hidden = !sinConexion;
+                    ultimoDato.textContent = `Último dato: ${hace || "sin registro"}`;
+                }
             }
         }
     }
 
     actualizarMapa(puntos, true);
+    // Completar el «hace X» de inmediato, sin esperar al primer ciclo.
+    actualizarTarjetas(puntos);
     const url = new URL(contenedor.dataset.endpoint, window.location.href);
     const parametros = new URLSearchParams(window.location.search);
     // Capturar el filtro aplicado; cambiar el select sin enviarlo no cambia la página.

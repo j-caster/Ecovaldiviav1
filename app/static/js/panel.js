@@ -76,6 +76,9 @@
         const alertaAviso = document.getElementById("panel-alertas-aviso");
         if (alertaTexto) alertaTexto.textContent = `${resumen.alertas} ${resumen.alertas === 1 ? "contenedor con alerta activa" : "contenedores con alerta activa"}`;
         if (alertaAviso) alertaAviso.className = `alert-summary mb-4${resumen.alertas ? " alert-summary-active" : ""}`;
+        const sinConexion = contenedores.filter(c => c.conectividad === "OFFLINE").length;
+        const sensoresTexto = document.getElementById("panel-sensores-texto");
+        if (sensoresTexto) sensoresTexto.textContent = `${sinConexion} ${sinConexion === 1 ? "sensor sin conexión" : "sensores sin conexión"}`;
     }
 
     async function actualizar() {

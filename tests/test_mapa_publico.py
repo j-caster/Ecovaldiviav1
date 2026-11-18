@@ -3,11 +3,11 @@
 import json
 import re
 import unittest
-from datetime import datetime
+from datetime import datetime, timedelta, timezone
 
 from app import create_app
 from app.extensions import db
-from app.models import Contenedor, Material, PuntoMaterial, PuntoReciclaje
+from app.models import Contenedor, DispositivoIoT, Material, PuntoMaterial, PuntoReciclaje
 from app.services.mapa_publico_service import coordenada_valida
 from config import Config
 from seed import cargar_datos
@@ -115,7 +115,8 @@ class MapaPublicoTests(unittest.TestCase):
         self.assertEqual(registro["materiales"], sorted(m.nombre for m in punto.materiales))
         self.assertEqual(registro["contenedores"], [{"codigo": activo.codigo,
             "estado": "Vaciado pendiente de lectura", "porcentaje_llenado": None,
-            "ultima_actualizacion": activo.ultima_actualizacion.isoformat() + "Z"}])
+            "ultima_actualizacion": activo.ultima_actualizacion.isoformat() + "Z",
+            "en_linea": False}])
 
     def test_json_seguro_para_nombres_de_usuario(self):
         punto = db.session.scalar(db.select(PuntoReciclaje))
@@ -141,7 +142,7 @@ class MapaPublicoTests(unittest.TestCase):
         for p in datos:
             self.assertEqual(set(p), {"punto_id", "nombre", "direccion", "latitud", "longitud", "materiales", "contenedores"})
             for c in p["contenedores"]:
-                self.assertEqual(set(c), {"codigo", "porcentaje_llenado", "estado", "ultima_actualizacion"})
+                self.assertEqual(set(c), {"codigo", "porcentaje_llenado", "estado", "ultima_actualizacion", "en_linea"})
 
     def test_endpoint_comparte_filtro_con_html(self):
         for material in db.session.scalars(db.select(Material)):
@@ -173,6 +174,42 @@ class MapaPublicoTests(unittest.TestCase):
         db.session.commit()
         puntos = self.client.get("/public/datos").json["puntos"]
         self.assertNotIn(codigo, {c["codigo"] for p in puntos for c in p["contenedores"]})
+
+    def contenedor_publico(self, codigo):
+        datos = self.client.get("/public/datos").json["puntos"]
+        return next(c for p in datos for c in p["contenedores"] if c["codigo"] == codigo)
+
+    def test_dispositivo_sin_datos_recientes_queda_fuera_de_linea(self):
+        dispositivo = db.session.scalar(db.select(DispositivoIoT))
+        codigo = dispositivo.contenedor.codigo
+        ahora = datetime.now(timezone.utc).replace(tzinfo=None)
+        dispositivo.ultima_actualizacion = None
+        db.session.commit()
+        self.assertIs(self.contenedor_publico(codigo)["en_linea"], False)
+        dispositivo.ultima_actualizacion = ahora - timedelta(minutes=5)
+        db.session.commit()
+        self.assertIs(self.contenedor_publico(codigo)["en_linea"], False)
+        html, _ = self.respuesta()
+        self.assertIn("Sin conexión", html)
+        dispositivo.ultima_actualizacion = ahora
+        db.session.commit()
+        self.assertIs(self.contenedor_publico(codigo)["en_linea"], True)
+
+    def test_json_publico_no_expone_campos_del_dispositivo(self):
+        dispositivo = db.session.scalar(db.select(DispositivoIoT))
+        dispositivo.ultima_ip = "10.99.88.77"
+        dispositivo.ultimo_boot = "BOOT-PRIVADO-123"
+        dispositivo.ultimo_seq = 987654321
+        dispositivo.modo_actual = "MANUAL"
+        dispositivo.ultima_actualizacion = datetime.now(timezone.utc).replace(tzinfo=None)
+        db.session.commit()
+        respuesta = self.client.get("/public/datos")
+        _, embebido = self.respuesta()
+        for texto in (respuesta.get_data(as_text=True), json.dumps(embebido)):
+            for valor in (dispositivo.identificador, "10.99.88.77", "BOOT-PRIVADO-123", "987654321", "MANUAL"):
+                self.assertNotIn(valor, texto)
+            for clave in ("ip", "boot", "seq", "dispositivo", "identificador", "modo", "compuerta"):
+                self.assertNotIn(f'"{clave}', texto)
 
     def test_limites_de_coordenadas_y_no_finitos(self):
         self.assertEqual(coordenada_valida(0, 90), 0)

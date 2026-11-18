@@ -44,6 +44,12 @@
     <strong id="panel-alertas-texto">{{ cantidad_alertas }} {{ 'contenedor con alerta activa' if cantidad_alertas == 1 else 'contenedores con alerta activa' }}</strong>
     <a class="btn btn-outline-danger btn-sm" href="{{ url_for('operacion.alertas', estado='activas') }}">Revisar alertas activas</a>
 </div>
+{# Aviso calculado desde la conectividad; no crea alertas en la base. #}
+{% set sin_conexion = contenedores|selectattr('conectividad', 'equalto', 'OFFLINE')|list|length %}
+<div id="panel-sensores-aviso" class="alert-summary mb-4" role="status" aria-live="polite">
+    {{ icon('sensor') }}
+    <strong id="panel-sensores-texto">{{ sin_conexion }} {{ 'sensor sin conexión' if sin_conexion == 1 else 'sensores sin conexión' }}</strong>
+</div>
 <section id="panel-operacional" class="mt-4" data-endpoint="{{ url_for('auth.panel_datos') }}" data-intervalo="{{ intervalo_panel_ms }}">
     <h2 class="h4">Contenedores</h2>
     <p id="panel-actualizacion" class="text-secondary" role="status">Actualización automática cada {{ intervalo_panel_ms // 1000 }} segundos. Fechas en hora local de Chile.</p>
