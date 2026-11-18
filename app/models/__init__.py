@@ -10,5 +10,6 @@ from app.models.dispositivo_iot import DispositivoIoT
 from app.models.medicion import Medicion
 from app.models.alerta import Alerta
 from app.models.evento_operacional import EventoOperacional
+from app.models.bitacora import Bitacora
 
-__all__ = ["PuntoReciclaje", "Material", "PuntoMaterial", "Horario", "Contenedor", "Usuario", "DispositivoIoT", "Medicion", "Alerta", "EventoOperacional"]
+__all__ = ["PuntoReciclaje", "Material", "PuntoMaterial", "Horario", "Contenedor", "Usuario", "DispositivoIoT", "Medicion", "Alerta", "EventoOperacional", "Bitacora"]

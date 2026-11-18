@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Bitácora · EcoValdivia{% endblock %}
+{% block content %}
+<div class="page-heading"><div><p class="eyebrow mb-2">Administración</p><h1>Bitácora</h1>
+<p>Cambios realizados desde la administración, del más reciente al más antiguo. Fechas en hora local de Chile.</p></div>
+<a class="btn btn-outline-success" href="{{ url_for('admin.index') }}">Volver a administración</a></div>
+<div class="card table-card"><div class="table-responsive">
+<table class="table table-striped align-middle"><caption class="visually-hidden">Bitácora de cambios de la administración</caption>
+    <thead><tr><th>Fecha</th><th>Usuario</th><th>Acción</th><th>Entidad</th><th>Detalle</th></tr></thead>
+    <tbody>
+    {% for registro in pagina.items %}
+    <tr>
+        <td>{{ registro.creado_en|fecha_chile }}</td>
+        <td>{{ registro.usuario.nombre }} ({{ registro.usuario.username }})</td>
+        <td>{{ registro.accion }}</td>
+        <td>{{ registro.entidad }} #{{ registro.entidad_id }}</td>
+        <td><ul class="list-unstyled small mb-0">
+        {% for campo, cambio in registro.detalle|dictsort %}
+            {% if cambio is mapping %}
+            <li><strong>{{ campo }}</strong>: {{ cambio.anterior if cambio.anterior is not none else '—' }} → {{ cambio.nuevo if cambio.nuevo is not none else '—' }}</li>
+            {% else %}
+            <li><strong>{{ campo }}</strong>: {{ cambio }}</li>
+            {% endif %}
+        {% else %}<li>Sin detalle.</li>{% endfor %}
+        </ul></td>
+    </tr>
+    {% else %}<tr><td colspan="5">No hay cambios registrados.</td></tr>{% endfor %}
+    </tbody>
+</table>
+</div></div>
+<div class="pagination-links">
+{% if pagina.has_prev %}<a href="{{ url_for('admin.bitacora', page=pagina.prev_num) }}">Anterior</a>{% endif %}
+{% if pagina.has_next %}<a href="{{ url_for('admin.bitacora', page=pagina.next_num) }}">Siguiente</a>{% endif %}
+</div>
+{% endblock %}

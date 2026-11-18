@@ -64,8 +64,8 @@ class VisualTests(unittest.TestCase):
                               'resumen-alertas', 'resumen-online', 'role="progressbar"'):
                 self.assertIn(fragmento, panel)
         admin = self.client.get("/admin").get_data(as_text=True)
-        self.assertEqual(admin.count('card admin-card'), 5)
-        for destino in ('/admin/puntos', '/admin/materiales', '/admin/mediciones/simular', '/operacion/alertas', '/operacion/historial'):
+        self.assertEqual(admin.count('card admin-card'), 6)
+        for destino in ('/admin/puntos', '/admin/materiales', '/admin/mediciones/simular', '/operacion/alertas', '/operacion/historial', '/admin/bitacora'):
             self.assertIn(destino, admin)
 
     def test_disponibles_explica_unidad_y_cuenta_estado_independiente_de_conectividad(self):

@@ -3,7 +3,8 @@ from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from flask_login import current_user
 
 from app.extensions import db
-from app.models import Contenedor, DispositivoIoT, Medicion, Horario, Material, PuntoMaterial, PuntoReciclaje, Usuario
+from app.models import Bitacora, Contenedor, DispositivoIoT, Medicion, Horario, Material, PuntoMaterial, PuntoReciclaje, Usuario
+from app.services.bitacora_service import registrar_cambios
 from app.services.usuario_service import validar_usuario
 from app.services.medicion_service import COMPUERTAS, MODOS, procesar_medicion
 from app.services.admin_validation import validar_contenedor, validar_horario, validar_horarios_creacion, validar_material, validar_punto
@@ -22,6 +23,7 @@ def proteger_admin():
 
 def guardar(mensaje):
     try:
+        registrar_cambios(current_user)
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
@@ -39,6 +41,14 @@ def guardar(mensaje):
 @admin_bp.get("/")
 def index():
     return render_template("admin.html")
+
+
+@admin_bp.get("/bitacora")
+def bitacora():
+    """Solo lectura: no existen rutas para editar ni borrar la bitácora."""
+    pagina = db.paginate(db.select(Bitacora).order_by(
+        Bitacora.creado_en.desc(), Bitacora.id.desc()), per_page=50)
+    return render_template("admin/bitacora.html", pagina=pagina)
 
 
 @admin_bp.get("/usuarios")
@@ -188,6 +198,8 @@ def crear_contenedor(punto_id):
         contenedor = Contenedor(punto_id=punto.id, **valores)
         db.session.add(contenedor)
         try:
+            # El flush vacía db.session.new: registrar antes la creación del contenedor.
+            registrar_cambios(current_user)
             # Necesario para conocer el id del contenedor antes de crear el dispositivo.
             db.session.flush()
         except SQLAlchemyError:
