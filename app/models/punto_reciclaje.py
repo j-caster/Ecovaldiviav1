@@ -13,6 +13,7 @@ class PuntoReciclaje(db.Model):
 
     horarios = db.relationship("Horario", back_populates="punto")
     contenedores = db.relationship("Contenedor", back_populates="punto")
+    avisos = db.relationship("AvisoCiudadano", back_populates="punto")
     materiales = db.relationship(
         "Material", secondary="punto_material", back_populates="puntos"
     )

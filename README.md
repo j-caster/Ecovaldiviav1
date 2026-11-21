@@ -21,6 +21,11 @@ Aplicación web para consultar puntos de reciclaje en Valdivia y gestionar el es
 - El panel operacional, las alertas y el historial de vaciados presentan fechas en `America/Santiago`, con formato `dd-mm-YYYY HH:MM:SS`, mediante el filtro compartido `fecha_chile`. `tzdata` proporciona las reglas de zona horaria en Windows. La persistencia y los timestamps del JSON permanecen en UTC; `/panel/datos` añade `fechas_locales` para la presentación durante las actualizaciones automáticas.
 - Panel operacional con actualización cada 5 segundos, modo y compuerta informados por el dispositivo y conectividad aproximada: ONLINE hasta 15 segundos desde su última actividad, OFFLINE después o sin actividad.
 - Telemetría UDP autenticada con HMAC-SHA256 y cifrada/autenticada con ChaCha20-Poly1305, separada del proceso web.
+- Reporte ciudadano anónimo (HU07): botón «Avisar un problema en este punto» en cada tarjeta, sin cuenta, con tres opciones (basura afuera, contenedor dañado, mal uso), comentario opcional de 140 caracteres y foto opcional (máximo 5 MB, visible solo para el operador). Limitado por IP y atendido en el panel desde «Avisos de vecinos».
+- Vista pública con vigencia del dato: «Último dato», «Actualizado hace X» y sensor en línea/sin conexión por contenedor, actualizados automáticamente.
+- Bloqueo temporal de inicio de sesión tras 5 intentos fallidos, por IP y por usuario.
+- La cámara en vivo no entrega la URL RTSP al navegador: solo `stream_src` y `stream_host`.
+- Bitácora de cambios administrativos de solo lectura en `/admin/bitacora`.
 
 El vaciado no inventa una medición física ni borra historial: deja el contenedor en `Vaciado pendiente de lectura`, con porcentaje sin dato, hasta recibir nueva telemetría. El cierre de alertas queda descrito en el evento VACIADO. AUTO/MANUAL y compuerta se muestran como telemetría; no hay comandos remotos.
 
