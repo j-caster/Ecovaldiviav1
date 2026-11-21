@@ -31,7 +31,7 @@ Los navegadores no reproducen RTSP de forma nativa; go2rtc hace la conversión a
 
 | Archivo | Rol |
 | --- | --- |
-| `app/services/camara_service.py` | Lee la config de cámara desde el entorno y devuelve `rtsp_url`, `stream_src` y `stream_host`. Solo el punto "Demostración — Las Ánimas" tiene cámara. |
+| `app/services/camara_service.py` | Lee la config de cámara desde el entorno y devuelve `stream_src` y `stream_host`. La `rtsp_url` se consulta internamente para decidir si hay cámara, pero **no se envía al navegador**. Solo el punto "Demostración — Las Ánimas" tiene cámara. |
 | `app/routes/auth.py` | Endpoint `GET /api/camara/<punto_id>` protegido con `@roles_required("operador", "administrador")`. La ruta `/panel` pasa `camara` al template. |
 | `app/templates/panel.html` | Tarjeta "Cámara en vivo" + botón "Ver Cámara en Vivo" + modal (solo si `camara` está configurada). |
 | `app/static/js/camara.js` | Abre el modal, consulta `/api/camara/<id>`, verifica que el streaming responda y renderiza el iframe. Muestra "Servidor de cámara local desconectado" si no responde. |

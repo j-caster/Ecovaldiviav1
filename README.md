@@ -22,6 +22,9 @@ Aplicación web para consultar puntos de reciclaje en Valdivia y gestionar el es
 - Panel operacional con actualización cada 5 segundos, modo y compuerta informados por el dispositivo y conectividad aproximada: ONLINE hasta 15 segundos desde su última actividad, OFFLINE después o sin actividad.
 - Telemetría UDP autenticada con HMAC-SHA256 y cifrada/autenticada con ChaCha20-Poly1305, separada del proceso web.
 - Reporte ciudadano anónimo (HU07): desde cada tarjeta pública, «Avisar un problema en este punto» abre un formulario sin cuenta ni foto, con tres opciones (basura afuera, contenedor dañado, mal uso) y comentario opcional de hasta 140 caracteres. El aviso no altera el porcentaje del sensor, se limita por IP (5 avisos cada 10 minutos) y llega a la sección «Avisos de vecinos» del panel, donde el operador puede marcarlo como atendido.
+- Vista pública con honestidad del dato: cada contenedor muestra «Actualizado hace X min», la hora del dato y si el sensor está en línea o sin conexión, actualizados automáticamente cada 5 segundos.
+- Bloqueo temporal de inicio de sesión tras 5 intentos fallidos, por IP y por usuario, registrados en la base (M4).
+- La cámara en vivo ya no entrega la URL RTSP al navegador: solo `stream_src` y `stream_host` (M2).
 
 El vaciado no inventa una medición física ni borra historial: deja el contenedor en `Vaciado pendiente de lectura`, con porcentaje sin dato, hasta recibir nueva telemetría. El cierre de alertas queda descrito en el evento VACIADO. AUTO/MANUAL y compuerta se muestran como telemetría; no hay comandos remotos.
 

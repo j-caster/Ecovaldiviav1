@@ -2,6 +2,7 @@
 
 from app.models.punto_reciclaje import PuntoReciclaje
 from app.models.aviso_ciudadano import AvisoCiudadano
+from app.models.intento_login import IntentoLogin
 from app.models.material import Material
 from app.models.punto_material import PuntoMaterial
 from app.models.horario import Horario
@@ -12,4 +13,4 @@ from app.models.medicion import Medicion
 from app.models.alerta import Alerta
 from app.models.evento_operacional import EventoOperacional
 
-__all__ = ["PuntoReciclaje", "AvisoCiudadano", "Material", "PuntoMaterial", "Horario", "Contenedor", "Usuario", "DispositivoIoT", "Medicion", "Alerta", "EventoOperacional"]
+__all__ = ["PuntoReciclaje", "AvisoCiudadano", "IntentoLogin", "Material", "PuntoMaterial", "Horario", "Contenedor", "Usuario", "DispositivoIoT", "Medicion", "Alerta", "EventoOperacional"]

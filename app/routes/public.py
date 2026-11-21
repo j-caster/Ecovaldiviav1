@@ -3,7 +3,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
-from app.models import Material, PuntoReciclaje
+from app.models import Contenedor, Material, PuntoReciclaje
 from app.services.mapa_publico_service import datos_mapa_publico
 from app.services.aviso_service import crear_aviso, limite_excedido, validar_aviso
 
@@ -28,7 +28,7 @@ def consultar_puntos_publicos():
     consulta = db.select(PuntoReciclaje).where(PuntoReciclaje.activo.is_(True)).options(
         selectinload(PuntoReciclaje.materiales),
         selectinload(PuntoReciclaje.horarios),
-        selectinload(PuntoReciclaje.contenedores),
+        selectinload(PuntoReciclaje.contenedores).selectinload(Contenedor.dispositivos),
     ).order_by(PuntoReciclaje.nombre)
     if material_id is not None:
         consulta = consulta.where(PuntoReciclaje.materiales.any(Material.id == material_id))

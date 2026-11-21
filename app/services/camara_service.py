@@ -27,6 +27,8 @@ def camara_para_punto(punto):
 
     `punto` es una instancia de PuntoReciclaje. Solo el punto de demostración
     tiene cámara y únicamente cuando la URL RTSP está configurada en el entorno.
+    La respuesta no incluye la URL RTSP ni credenciales: solo `stream_src` y
+    `stream_host`, que el navegador necesita para componer el iframe de go2rtc.
     """
     if punto.nombre != PUNTO_CON_CAMARA:
         return None
@@ -38,7 +40,6 @@ def camara_para_punto(punto):
     return {
         "punto_id": punto.id,
         "nombre": punto.nombre,
-        "rtsp_url": rtsp_url,
         "stream_src": os.environ.get(
             "ECOV_CAMARA_STREAM_SRC",
             STREAM_SRC_POR_DEFECTO,

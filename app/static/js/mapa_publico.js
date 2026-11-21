@@ -19,6 +19,16 @@
         return `${partes.day}-${partes.month}-${partes.year} ${partes.hour}:${partes.minute}:${partes.second}`;
     }
 
+    function haceTiempo(minutos) {
+        if (minutos === null || minutos === undefined) return "Sin actualización registrada";
+        if (minutos < 1) return "hace menos de 1 min";
+        if (minutos < 60) return `hace ${minutos} min`;
+        const horas = Math.floor(minutos / 60);
+        if (horas < 24) return `hace ${horas} h`;
+        const dias = Math.floor(horas / 24);
+        return dias === 1 ? "hace 1 día" : `hace ${dias} días`;
+    }
+
     const contenedor = document.getElementById("mapa-publico");
     const datos = document.getElementById("datos-mapa-publico");
     const aviso = document.getElementById("mapa-aviso");
@@ -48,7 +58,8 @@
         for (const c of punto.contenedores) {
             const porcentaje = Number.isFinite(c.porcentaje_llenado)
                 ? `${c.porcentaje_llenado.toFixed(1)}%` : "Sin datos de llenado";
-            contenido.append(parrafo(`${c.codigo}: ${c.estado || "Sin estado"} · ${porcentaje}`));
+            const sinConexion = c.conectividad === "OFFLINE" ? " · sensor sin conexión" : "";
+            contenido.append(parrafo(`${c.codigo}: ${c.estado || "Sin estado"} · ${porcentaje}${sinConexion}`));
         }
         if (!punto.contenedores.length) contenido.append(parrafo("Sin contenedores activos registrados."));
         return contenido;
@@ -147,6 +158,17 @@
                 }
                 bloque.querySelector('[data-campo="fecha"]').textContent =
                     fechaChile(c.ultima_actualizacion) || "Sin actualización registrada";
+                const hace = bloque.querySelector('[data-campo="hace"]');
+                if (hace) {
+                    hace.textContent = c.ultima_actualizacion
+                        ? haceTiempo(c.hace_minutos) : "Sin actualización registrada";
+                }
+                const conectividad = bloque.querySelector('[data-campo="conectividad"]');
+                if (conectividad) {
+                    const enLinea = c.conectividad === "ONLINE";
+                    conectividad.textContent = enLinea ? "Sensor en línea" : "Sensor sin conexión";
+                    conectividad.className = `badge status-badge ${enLinea ? "state-disponible" : "state-neutral"}`;
+                }
             }
         }
     }

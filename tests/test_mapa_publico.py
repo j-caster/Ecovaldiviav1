@@ -113,9 +113,14 @@ class MapaPublicoTests(unittest.TestCase):
         self.assertEqual(registro["latitud"], punto.latitud)
         self.assertEqual(registro["longitud"], punto.longitud)
         self.assertEqual(registro["materiales"], sorted(m.nombre for m in punto.materiales))
-        self.assertEqual(registro["contenedores"], [{"codigo": activo.codigo,
-            "estado": "Vaciado pendiente de lectura", "porcentaje_llenado": None,
-            "ultima_actualizacion": activo.ultima_actualizacion.isoformat() + "Z"}])
+        self.assertEqual(len(registro["contenedores"]), 1)
+        contenedor_datos = registro["contenedores"][0]
+        self.assertEqual(contenedor_datos["codigo"], activo.codigo)
+        self.assertEqual(contenedor_datos["estado"], "Vaciado pendiente de lectura")
+        self.assertIsNone(contenedor_datos["porcentaje_llenado"])
+        self.assertEqual(contenedor_datos["ultima_actualizacion"], activo.ultima_actualizacion.isoformat() + "Z")
+        self.assertIn(contenedor_datos["conectividad"], ("ONLINE", "OFFLINE"))
+        self.assertIsInstance(contenedor_datos["hace_minutos"], int)
 
     def test_json_seguro_para_nombres_de_usuario(self):
         punto = db.session.scalar(db.select(PuntoReciclaje))
@@ -141,7 +146,7 @@ class MapaPublicoTests(unittest.TestCase):
         for p in datos:
             self.assertEqual(set(p), {"punto_id", "nombre", "direccion", "latitud", "longitud", "materiales", "contenedores"})
             for c in p["contenedores"]:
-                self.assertEqual(set(c), {"codigo", "porcentaje_llenado", "estado", "ultima_actualizacion"})
+                self.assertEqual(set(c), {"codigo", "porcentaje_llenado", "estado", "ultima_actualizacion", "conectividad", "hace_minutos"})
 
     def test_endpoint_comparte_filtro_con_html(self):
         for material in db.session.scalars(db.select(Material)):
