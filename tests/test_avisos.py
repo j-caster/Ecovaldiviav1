@@ -135,6 +135,11 @@ class AvisosCiudadanosTests(unittest.TestCase):
         # Solo el operador puede ver la foto adjunta.
         self.assertEqual(self.client.get(f"/operacion/avisos/{aviso.id}/foto").status_code, 302)
         self.login("operador", "Operador123!")
+        pagina = self.client.get("/operacion/avisos")
+        self.assertEqual(pagina.status_code, 200)
+        html = pagina.get_data(as_text=True)
+        self.assertIn("btn-ver-foto", html)
+        self.assertIn("modal-foto-aviso", html)
         respuesta_foto = self.client.get(f"/operacion/avisos/{aviso.id}/foto")
         self.assertEqual(respuesta_foto.status_code, 200)
         self.assertEqual(respuesta_foto.data, contenido)

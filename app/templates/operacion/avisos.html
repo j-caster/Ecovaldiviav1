@@ -23,7 +23,12 @@
     <td><strong>{{ aviso.punto.nombre }}</strong><span class="d-block small text-secondary">{{ aviso.punto.direccion }}</span></td>
     <td><span class="badge material-badge">{{ etiqueta_tipo(aviso.tipo) }}</span></td>
     <td class="cell-mensaje">{{ aviso.comentario or 'Sin comentario.' }}
-        {% if aviso.foto %}<img src="{{ url_for('operacion.aviso_foto', aviso_id=aviso.id) }}" alt="Foto adjunta al aviso" class="img-thumbnail aviso-foto d-block mt-2" loading="lazy">{% endif %}
+        {% if aviso.foto %}
+        <button type="button" class="btn btn-link p-0 border-0 btn-ver-foto" data-foto-url="{{ url_for('operacion.aviso_foto', aviso_id=aviso.id) }}" aria-label="Ver foto ampliada">
+            <img src="{{ url_for('operacion.aviso_foto', aviso_id=aviso.id) }}" alt="Foto adjunta al aviso" class="img-thumbnail aviso-foto d-block mt-2" loading="lazy">
+            <span class="small text-secondary d-block">{{ icon('camara') }} Ampliar foto</span>
+        </button>
+        {% endif %}
     </td>
     <td>{{ aviso.creado_en|fecha_chile }}</td>
     <td>{% if aviso.estado == 'NUEVO' %}<span class="badge status-badge state-casi">Nuevo</span>{% else %}<span class="badge status-badge state-neutral">Atendido</span>{% endif %}</td>
@@ -40,4 +45,22 @@
 {% if pagina.has_prev %}<a href="{{ url_for('operacion.avisos', page=pagina.prev_num) }}">Anterior</a>{% endif %}
 {% if pagina.has_next %}<a href="{{ url_for('operacion.avisos', page=pagina.next_num) }}">Siguiente</a>{% endif %}
 </div>
+
+<div class="modal fade" id="modal-foto-aviso" tabindex="-1" aria-labelledby="foto-aviso-titulo" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title h5" id="foto-aviso-titulo">Foto del aviso</h2>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="foto-aviso-grande" src="" alt="Foto ampliada del aviso" class="img-fluid rounded">
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts_extra %}
+<script src="{{ url_for('static', filename='js/aviso_foto.js') }}" defer></script>
 {% endblock %}

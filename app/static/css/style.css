@@ -350,7 +350,7 @@ a:hover { color: var(--eco-forest); }
 .point-list .container-status:last-child { margin-bottom: 0 !important; }
 .point-list .container-update { font-size: .72rem; }
 .point-list .btn-avisar-problema { margin-top: .5rem; min-height: 2.75rem; }
-.aviso-foto { max-width: 120px; max-height: 90px; object-fit: cover; }
+.aviso-foto { max-width: 180px; max-height: 140px; object-fit: cover; cursor: zoom-in; }
 @media (max-width: 575.98px) {
     #modal-aviso .modal-footer .btn { flex: 1 1 auto; }
 }
