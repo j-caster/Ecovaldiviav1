@@ -246,6 +246,12 @@ Despliegue en un clic: el botón abre Render con este Blueprint ya apuntando a
 `j-caster/Ecovaldiviav1`. Requiere una cuenta de Render; no hace falta Shell ni
 configurar variables a mano.
 
+> **Repositorio canónico.** Render despliega la rama `main` de
+> `j-caster/Ecovaldiviav1` (este repositorio). Existe además el repositorio
+> anterior `j-caster/ecovaldivia`, que quedó **obsoleto**: los cambios nuevos
+> deben subirse a `Ecovaldiviav1` para que lleguen a producción. No trabajar
+> en paralelo sobre ambos repositorios para no pisar los cambios del equipo.
+
 1. Subir el repositorio a GitHub.
 2. En Render: **New → Blueprint** y elegir el repositorio. Render lee `render.yaml`, instala `requirements.txt`, crea la base PostgreSQL y publica el servicio con certificado HTTPS automático.
 3. `run.py` crea las tablas y carga los datos de demostración al arrancar (idempotente), así que no hace falta Shell ni ejecutar `python seed.py` a mano: el sitio queda listo al terminar el primer despliegue.
