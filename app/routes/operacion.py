@@ -1,4 +1,6 @@
-from flask import Blueprint, flash, redirect, render_template, request, url_for, abort
+from io import BytesIO
+
+from flask import Blueprint, abort, flash, redirect, render_template, request, send_file, url_for
 from flask_login import current_user
 from sqlalchemy import case
 from sqlalchemy.exc import SQLAlchemyError
@@ -86,3 +88,17 @@ def aviso_atendido(aviso_id):
     else:
         flash("Aviso marcado como atendido.", "success")
     return redirect(url_for("operacion.avisos"))
+
+
+@operacion_bp.get("/avisos/<int:aviso_id>/foto")
+def aviso_foto(aviso_id):
+    """Foto adjunta a un reporte, visible solo para operador y administrador."""
+    aviso = db.get_or_404(AvisoCiudadano, aviso_id)
+    if not aviso.foto:
+        abort(404)
+    return send_file(
+        BytesIO(aviso.foto),
+        mimetype=aviso.foto_mime or "image/jpeg",
+        as_attachment=False,
+        max_age=0,
+    )

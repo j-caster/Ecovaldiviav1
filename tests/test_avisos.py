@@ -1,10 +1,12 @@
 """Reporte ciudadano anónimo (HU07): validación, límite y atención en el panel."""
 
+import io
 import unittest
 
 from app import create_app
 from app.extensions import db
-from app.models import AvisoCiudadano, Contenedor, PuntoReciclaje
+from app.models import AvisoCiudadano, PuntoReciclaje
+from app.services import aviso_service
 from app.services.aviso_service import MAX_AVISOS_POR_VENTANA, restablecer_limite
 from config import Config
 from seed import cargar_datos
@@ -118,6 +120,47 @@ class AvisosCiudadanosTests(unittest.TestCase):
             f"/operacion/avisos/{aviso.id}/atendido", data={"csrf_token": self.token()})
         self.assertEqual(respuesta.status_code, 302)
         self.assertEqual(db.session.get(AvisoCiudadano, aviso.id).estado, "ATENDIDO")
+
+    def test_envio_con_foto_opcional(self):
+        punto = self.punto()
+        contenido = b"imagen-de-prueba"
+        respuesta = self.client.post("/public/avisos", data={
+            "punto_id": str(punto.id), "tipo": "BASURA_FUERA", "comentario": "Con foto.",
+            "foto": (io.BytesIO(contenido), "foto.png"),
+        }, content_type="multipart/form-data")
+        self.assertEqual(respuesta.status_code, 201)
+        aviso = db.session.scalar(db.select(AvisoCiudadano))
+        self.assertEqual(aviso.foto, contenido)
+        self.assertEqual(aviso.foto_mime, "image/png")
+        # Solo el operador puede ver la foto adjunta.
+        self.assertEqual(self.client.get(f"/operacion/avisos/{aviso.id}/foto").status_code, 302)
+        self.login("operador", "Operador123!")
+        respuesta_foto = self.client.get(f"/operacion/avisos/{aviso.id}/foto")
+        self.assertEqual(respuesta_foto.status_code, 200)
+        self.assertEqual(respuesta_foto.data, contenido)
+
+    def test_foto_tipo_no_permitido_rechazada(self):
+        punto = self.punto()
+        respuesta = self.client.post("/public/avisos", data={
+            "punto_id": str(punto.id), "tipo": "BASURA_FUERA", "comentario": "",
+            "foto": (io.BytesIO(b"no-es-imagen"), "nota.txt"),
+        }, content_type="multipart/form-data")
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertIn("JPG, PNG o WebP", respuesta.json["error"])
+
+    def test_foto_grande_rechazada(self):
+        punto = self.punto()
+        original = aviso_service.MAX_FOTO_BYTES
+        aviso_service.MAX_FOTO_BYTES = 10
+        try:
+            respuesta = self.client.post("/public/avisos", data={
+                "punto_id": str(punto.id), "tipo": "BASURA_FUERA", "comentario": "",
+                "foto": (io.BytesIO(b"x" * 20), "foto.png"),
+            }, content_type="multipart/form-data")
+        finally:
+            aviso_service.MAX_FOTO_BYTES = original
+        self.assertEqual(respuesta.status_code, 400)
+        self.assertIn("5 MB", respuesta.json["error"])
 
 
 if __name__ == "__main__":

@@ -21,5 +21,8 @@ class AvisoCiudadano(db.Model):
     comentario = db.Column(db.String(140), nullable=False, default="")
     estado = db.Column(db.String(20), nullable=False, default="NUEVO")
     creado_en = db.Column(db.DateTime, nullable=False)
+    # Foto opcional del reporte; solo la ve el operador/administrador.
+    foto = db.Column(db.LargeBinary)
+    foto_mime = db.Column(db.String(50))
 
     punto = db.relationship("PuntoReciclaje", back_populates="avisos")

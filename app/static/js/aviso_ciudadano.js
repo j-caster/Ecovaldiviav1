@@ -34,13 +34,25 @@
             error.classList.remove("d-none");
             return;
         }
+        const campoFoto = document.getElementById("aviso-foto");
+        const foto = campoFoto && campoFoto.files.length ? campoFoto.files[0] : null;
+        if (foto && foto.size > 5 * 1024 * 1024) {
+            error.textContent = "La foto no puede superar 5 MB.";
+            error.classList.remove("d-none");
+            return;
+        }
         botonEnviar.disabled = true;
+        const cuerpo = new FormData();
+        cuerpo.append("punto_id", String(puntoId));
+        cuerpo.append("tipo", tipo);
+        cuerpo.append("comentario", comentario);
+        if (foto) cuerpo.append("foto", foto);
         try {
             const respuesta = await fetch(modalElemento.dataset.endpoint, {
                 method: "POST",
                 credentials: "same-origin",
-                headers: {"Content-Type": "application/json", "Accept": "application/json"},
-                body: JSON.stringify({punto_id: Number(puntoId), tipo, comentario})
+                headers: {"Accept": "application/json"},
+                body: cuerpo
             });
             const datos = await respuesta.json();
             if (respuesta.ok && datos.ok) {

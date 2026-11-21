@@ -22,7 +22,9 @@
 <tr class="{{ 'alert-active' if aviso.estado == 'NUEVO' else '' }}">
     <td><strong>{{ aviso.punto.nombre }}</strong><span class="d-block small text-secondary">{{ aviso.punto.direccion }}</span></td>
     <td><span class="badge material-badge">{{ etiqueta_tipo(aviso.tipo) }}</span></td>
-    <td class="cell-mensaje">{{ aviso.comentario or 'Sin comentario.' }}</td>
+    <td class="cell-mensaje">{{ aviso.comentario or 'Sin comentario.' }}
+        {% if aviso.foto %}<img src="{{ url_for('operacion.aviso_foto', aviso_id=aviso.id) }}" alt="Foto adjunta al aviso" class="img-thumbnail aviso-foto d-block mt-2" loading="lazy">{% endif %}
+    </td>
     <td>{{ aviso.creado_en|fecha_chile }}</td>
     <td>{% if aviso.estado == 'NUEVO' %}<span class="badge status-badge state-casi">Nuevo</span>{% else %}<span class="badge status-badge state-neutral">Atendido</span>{% endif %}</td>
     <td class="action-cell">{% if aviso.estado == 'NUEVO' %}

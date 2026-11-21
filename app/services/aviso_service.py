@@ -19,6 +19,8 @@ TIPOS_AVISO = {
 MAX_COMENTARIO = 140
 MAX_AVISOS_POR_VENTANA = 5
 VENTANA_SEGUNDOS = 600
+MAX_FOTO_BYTES = 5 * 1024 * 1024
+TIPOS_FOTO = {"image/jpeg", "image/png", "image/webp"}
 
 # El reporte es anónimo y no pide cuenta, por lo que el límite se aplica por IP
 # en memoria. Con un solo worker (render.yaml) el control es efectivo; si algún
@@ -41,6 +43,30 @@ def validar_aviso(datos):
     return {"tipo": tipo, "comentario": comentario}
 
 
+def _mime_por_extension(nombre):
+    if nombre.endswith(".png"):
+        return "image/png"
+    if nombre.endswith((".jpg", ".jpeg")):
+        return "image/jpeg"
+    if nombre.endswith(".webp"):
+        return "image/webp"
+    return "image/jpeg"
+
+
+def validar_foto(archivo):
+    """Leer y validar la foto opcional; devuelve (bytes, mime) o (None, None)."""
+    datos = archivo.read()
+    if not datos:
+        return None, None
+    if len(datos) > MAX_FOTO_BYTES:
+        raise ValueError("La foto no puede superar 5 MB.")
+    nombre = (archivo.filename or "").lower()
+    mime = (archivo.mimetype or "").lower()
+    if mime not in TIPOS_FOTO and not nombre.endswith((".jpg", ".jpeg", ".png", ".webp")):
+        raise ValueError("La foto debe ser JPG, PNG o WebP.")
+    return datos, mime if mime in TIPOS_FOTO else _mime_por_extension(nombre)
+
+
 def limite_excedido(ip):
     """Registrar el intento y avisar si el ciudadano ya superó el límite."""
     ahora = time.time()
@@ -60,11 +86,11 @@ def restablecer_limite():
         _intentos.clear()
 
 
-def crear_aviso(punto_id, tipo, comentario):
+def crear_aviso(punto_id, tipo, comentario, foto=None, foto_mime=None):
     fecha = datetime.now(timezone.utc).replace(tzinfo=None)
     aviso = AvisoCiudadano(
         punto_id=punto_id, tipo=tipo, comentario=comentario,
-        estado="NUEVO", creado_en=fecha,
+        estado="NUEVO", creado_en=fecha, foto=foto, foto_mime=foto_mime,
     )
     db.session.add(aviso)
     try:

@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from app.extensions import db
 from app.models import Contenedor, Material, PuntoReciclaje
 from app.services.mapa_publico_service import datos_mapa_publico
-from app.services.aviso_service import crear_aviso, limite_excedido, validar_aviso
+from app.services.aviso_service import crear_aviso, limite_excedido, validar_aviso, validar_foto
 
 public_bp = Blueprint("public", __name__)
 
@@ -66,7 +66,7 @@ def reportar_aviso():
     if limite_excedido(request.remote_addr or "desconocida"):
         return jsonify(ok=False, error="Límite de avisos alcanzado. Intenta más tarde."), 429
 
-    datos = request.get_json(silent=True) or request.form
+    datos = request.get_json(silent=True) if request.is_json else request.form
     try:
         punto_id = int(datos.get("punto_id", ""))
     except (TypeError, ValueError):
@@ -78,11 +78,13 @@ def reportar_aviso():
 
     try:
         valores = validar_aviso(datos)
+        foto = request.files.get("foto")
+        foto_bytes, foto_mime = validar_foto(foto) if foto and foto.filename else (None, None)
     except ValueError as error:
         return jsonify(ok=False, error=str(error)), 400
 
     try:
-        aviso = crear_aviso(punto.id, valores["tipo"], valores["comentario"])
+        aviso = crear_aviso(punto.id, valores["tipo"], valores["comentario"], foto_bytes, foto_mime)
     except SQLAlchemyError:
         return jsonify(ok=False, error="No pudimos guardar el aviso. Intenta nuevamente."), 500
 
