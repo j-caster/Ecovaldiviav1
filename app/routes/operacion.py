@@ -1,10 +1,12 @@
 from flask import Blueprint, flash, redirect, render_template, request, url_for, abort
 from flask_login import current_user
+from sqlalchemy import case
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import joinedload
 
 from app.extensions import db
-from app.models import Alerta, Contenedor, EventoOperacional
+from app.models import Alerta, AvisoCiudadano, Contenedor, EventoOperacional
+from app.services.aviso_service import etiqueta_tipo
 from app.services.operacion_service import registrar_vaciado
 from app.services.security import roles_required, validar_csrf
 
@@ -56,3 +58,31 @@ def historial():
         joinedload(EventoOperacional.contenedor), joinedload(EventoOperacional.usuario)).order_by(
         EventoOperacional.creado_en.desc(), EventoOperacional.id.desc()), per_page=50)
     return render_template("operacion/historial.html", pagina=pagina)
+
+
+@operacion_bp.get("/avisos")
+def avisos():
+    """Reportes ciudadanos: primero los nuevos, luego los atendidos."""
+    consulta = db.select(AvisoCiudadano).options(
+        joinedload(AvisoCiudadano.punto)).order_by(
+        case((AvisoCiudadano.estado == "NUEVO", 0), else_=1),
+        AvisoCiudadano.creado_en.desc(), AvisoCiudadano.id.desc())
+    pagina = db.paginate(consulta, per_page=50)
+    total_nuevos = db.session.scalar(db.select(db.func.count()).select_from(
+        AvisoCiudadano).where(AvisoCiudadano.estado == "NUEVO"))
+    return render_template("operacion/avisos.html", pagina=pagina, total_nuevos=total_nuevos,
+                           etiqueta_tipo=etiqueta_tipo)
+
+
+@operacion_bp.post("/avisos/<int:aviso_id>/atendido")
+def aviso_atendido(aviso_id):
+    aviso = db.get_or_404(AvisoCiudadano, aviso_id)
+    aviso.estado = "ATENDIDO"
+    try:
+        db.session.commit()
+    except SQLAlchemyError:
+        db.session.rollback()
+        flash("No se pudo actualizar el aviso. Intenta nuevamente.", "danger")
+    else:
+        flash("Aviso marcado como atendido.", "success")
+    return redirect(url_for("operacion.avisos"))

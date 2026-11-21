@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from '_visual.html' import icon %}
+{% block title %}Avisos de vecinos · EcoValdivia{% endblock %}
+{% block content %}
+<div class="page-heading">
+    <div>
+        <p class="eyebrow mb-2">Seguimiento operacional</p>
+        <h1>Avisos de vecinos</h1>
+        <p>Reportes anónimos de la comunidad sobre basura fuera, daños o mal uso en los puntos. Fechas en hora local de Chile.</p>
+    </div>
+    <a class="btn btn-outline-success" href="{{ url_for('operacion.alertas') }}">{{ icon('alerta') }} Alertas de llenado</a>
+</div>
+<div class="alert-summary {{ 'alert-summary-active' if total_nuevos else '' }} mb-3" role="status">
+    {{ icon('personas') }} <strong>{{ total_nuevos }} {{ 'aviso nuevo' if total_nuevos == 1 else 'avisos nuevos' }}</strong>
+    <span>{{ 'Requieren atención del equipo.' if total_nuevos else 'No hay avisos nuevos pendientes.' }}</span>
+</div>
+<div class="card table-card"><div class="table-responsive">
+<table class="table table-striped align-middle"><caption class="visually-hidden">Reportes ciudadanos y acciones de atención</caption>
+<thead><tr><th>Punto</th><th>Problema</th><th>Comentario</th><th>Recibido</th><th>Situación</th><th>Acción</th></tr></thead>
+<tbody>
+{% for aviso in pagina.items %}
+<tr class="{{ 'alert-active' if aviso.estado == 'NUEVO' else '' }}">
+    <td><strong>{{ aviso.punto.nombre }}</strong><span class="d-block small text-secondary">{{ aviso.punto.direccion }}</span></td>
+    <td><span class="badge material-badge">{{ etiqueta_tipo(aviso.tipo) }}</span></td>
+    <td class="cell-mensaje">{{ aviso.comentario or 'Sin comentario.' }}</td>
+    <td>{{ aviso.creado_en|fecha_chile }}</td>
+    <td>{% if aviso.estado == 'NUEVO' %}<span class="badge status-badge state-casi">Nuevo</span>{% else %}<span class="badge status-badge state-neutral">Atendido</span>{% endif %}</td>
+    <td class="action-cell">{% if aviso.estado == 'NUEVO' %}
+        <form method="post" action="{{ url_for('operacion.aviso_atendido', aviso_id=aviso.id) }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-success btn-sm">Marcar atendido</button>
+        </form>
+    {% else %}<span class="small text-secondary">Sin acciones pendientes</span>{% endif %}</td>
+</tr>
+{% else %}<tr><td colspan="6">No hay avisos ciudadanos registrados.</td></tr>{% endfor %}
+</tbody></table></div></div>
+<div class="pagination-links">
+{% if pagina.has_prev %}<a href="{{ url_for('operacion.avisos', page=pagina.prev_num) }}">Anterior</a>{% endif %}
+{% if pagina.has_next %}<a href="{{ url_for('operacion.avisos', page=pagina.next_num) }}">Siguiente</a>{% endif %}
+</div>
+{% endblock %}

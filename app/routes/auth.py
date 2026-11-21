@@ -3,7 +3,8 @@ from flask_login import current_user, login_user, logout_user
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db, login_manager
-from app.models import PuntoReciclaje, Usuario
+from app.models import AvisoCiudadano, PuntoReciclaje, Usuario
+from app.services.aviso_service import etiqueta_tipo
 from app.services.security import roles_required, validar_csrf
 from app.services.camara_service import PUNTO_CON_CAMARA, camara_para_punto
 from app.services.panel_service import INTERVALO_PANEL_SEGUNDOS, datos_panel
@@ -57,7 +58,14 @@ def panel():
         db.select(PuntoReciclaje).where(PuntoReciclaje.nombre == PUNTO_CON_CAMARA)
     )
     camara = camara_para_punto(punto_camara) if punto_camara else None
+    avisos_nuevos = db.session.scalars(db.select(AvisoCiudadano).where(
+        AvisoCiudadano.estado == "NUEVO").order_by(
+        AvisoCiudadano.creado_en.desc(), AvisoCiudadano.id.desc()).limit(5)).all()
+    total_avisos_nuevos = db.session.scalar(db.select(db.func.count()).select_from(
+        AvisoCiudadano).where(AvisoCiudadano.estado == "NUEVO"))
     return render_template("panel.html", contenedores=datos_panel(), camara=camara,
+                           avisos_nuevos=avisos_nuevos, total_avisos_nuevos=total_avisos_nuevos,
+                           etiqueta_tipo=etiqueta_tipo,
                            intervalo_panel_ms=INTERVALO_PANEL_SEGUNDOS * 1000)
 
 

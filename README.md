@@ -21,6 +21,7 @@ Aplicación web para consultar puntos de reciclaje en Valdivia y gestionar el es
 - El panel operacional, las alertas y el historial de vaciados presentan fechas en `America/Santiago`, con formato `dd-mm-YYYY HH:MM:SS`, mediante el filtro compartido `fecha_chile`. `tzdata` proporciona las reglas de zona horaria en Windows. La persistencia y los timestamps del JSON permanecen en UTC; `/panel/datos` añade `fechas_locales` para la presentación durante las actualizaciones automáticas.
 - Panel operacional con actualización cada 5 segundos, modo y compuerta informados por el dispositivo y conectividad aproximada: ONLINE hasta 15 segundos desde su última actividad, OFFLINE después o sin actividad.
 - Telemetría UDP autenticada con HMAC-SHA256 y cifrada/autenticada con ChaCha20-Poly1305, separada del proceso web.
+- Reporte ciudadano anónimo (HU07): desde cada tarjeta pública, «Avisar un problema en este punto» abre un formulario sin cuenta ni foto, con tres opciones (basura afuera, contenedor dañado, mal uso) y comentario opcional de hasta 140 caracteres. El aviso no altera el porcentaje del sensor, se limita por IP (5 avisos cada 10 minutos) y llega a la sección «Avisos de vecinos» del panel, donde el operador puede marcarlo como atendido.
 
 El vaciado no inventa una medición física ni borra historial: deja el contenedor en `Vaciado pendiente de lectura`, con porcentaje sin dato, hasta recibir nueva telemetría. El cierre de alertas queda descrito en el evento VACIADO. AUTO/MANUAL y compuerta se muestran como telemetría; no hay comandos remotos.
 
@@ -208,6 +209,7 @@ python -m pip check
 node --check app/static/js/main.js
 node --check app/static/js/mapa_publico.js
 node --check app/static/js/panel.js
+node --check app/static/js/aviso_ciudadano.js
 node tests/test_mapa_refresh.js
 node tests/test_panel_refresh.js
 git diff --check
@@ -230,6 +232,8 @@ La revisión del Hito 9 y sus límites se documentan en [VALIDACION_ENTREGA.md](
 | `/admin` | Solo administrador: puntos, materiales, horarios y simulación |
 | `/operacion/alertas` | Operador/admin: alertas y registrar vaciado |
 | `/operacion/historial` | Operador/admin: usuario y evento del vaciado |
+| `/operacion/avisos` | Operador/admin: reportes ciudadanos y marcar atendido |
+| `POST /public/avisos` | Público anónimo: enviar reporte de incidencia (usado por el botón de cada tarjeta) |
 
 En una base de demostración, abrir público y panel en ventanas separadas. Desde administración simular lecturas para el dispositivo demo: comprobar que cambian porcentajes, barras y popups sin recargar tras el siguiente ciclo. Para confirmar Lleno, enviar tres lecturas con sensores a 25 cm, mismo BOOT y SEQ creciente; el formulario permite introducir BOOT/SEQ. Si se deja BOOT vacío, el servicio crea un BOOT diferente por simulación y no acumula tres confirmaciones. Registrar vaciado y comprobar cierre de alerta, evento y espera de nueva lectura. Estas acciones modifican datos: realizarlas en una base de demostración, no sobre historial operativo.
 

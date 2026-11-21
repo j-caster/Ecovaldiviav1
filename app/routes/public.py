@@ -1,9 +1,11 @@
 from flask import Blueprint, jsonify, render_template, request
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import selectinload
 
 from app.extensions import db
 from app.models import Material, PuntoReciclaje
 from app.services.mapa_publico_service import datos_mapa_publico
+from app.services.aviso_service import crear_aviso, limite_excedido, validar_aviso
 
 public_bp = Blueprint("public", __name__)
 
@@ -56,3 +58,33 @@ def datos():
     respuesta = jsonify(puntos=datos_mapa_publico(puntos))
     respuesta.headers["Cache-Control"] = "no-store"
     return respuesta
+
+
+@public_bp.post("/public/avisos")
+def reportar_aviso():
+    """Recibir un reporte ciudadano anónimo sobre un punto de reciclaje."""
+    if limite_excedido(request.remote_addr or "desconocida"):
+        return jsonify(ok=False, error="Límite de avisos alcanzado. Intenta más tarde."), 429
+
+    datos = request.get_json(silent=True) or request.form
+    try:
+        punto_id = int(datos.get("punto_id", ""))
+    except (TypeError, ValueError):
+        return jsonify(ok=False, error="Selecciona un punto válido."), 400
+
+    punto = db.session.get(PuntoReciclaje, punto_id)
+    if punto is None or not punto.activo:
+        return jsonify(ok=False, error="El punto seleccionado no está disponible."), 404
+
+    try:
+        valores = validar_aviso(datos)
+    except ValueError as error:
+        return jsonify(ok=False, error=str(error)), 400
+
+    try:
+        aviso = crear_aviso(punto.id, valores["tipo"], valores["comentario"])
+    except SQLAlchemyError:
+        return jsonify(ok=False, error="No pudimos guardar el aviso. Intenta nuevamente."), 500
+
+    return jsonify(ok=True, aviso_id=aviso.id,
+                   mensaje="Gracias. El operador verá tu aviso en su panel."), 201

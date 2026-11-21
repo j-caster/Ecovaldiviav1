@@ -349,6 +349,7 @@ a:hover { color: var(--eco-forest); }
 .point-list .container-status { padding: .75rem; }
 .point-list .container-status:last-child { margin-bottom: 0 !important; }
 .point-list .container-update { font-size: .72rem; }
+.point-list .btn-avisar-problema { margin-top: .5rem; }
 /* ---------- Tags: material (chip suave) y estado (píldora con anillo) ---------- */
 .material-badge {
     display: inline-flex;
