@@ -190,6 +190,8 @@ def crear_contenedor(punto_id):
         flash(str(error), "danger")
         return redirect(url_for("admin.punto_formulario", punto_id=punto.id))
     identificador = valores.pop("identificador")
+    vacio = valores.pop("distancia_vacio_cm", 175.0)
+    lleno = valores.pop("distancia_lleno_cm", 25.0)
     if _codigo_ocupado(valores["codigo"]):
         flash("Ya existe un contenedor con ese código.", "danger")
     elif _identificador_ocupado(identificador):
@@ -207,7 +209,8 @@ def crear_contenedor(punto_id):
             flash("No se pudo crear el contenedor. Intenta nuevamente.", "danger")
         else:
             db.session.add(DispositivoIoT(
-                identificador=identificador, contenedor_id=contenedor.id, activo=True))
+                identificador=identificador, contenedor_id=contenedor.id, activo=True,
+                distancia_vacio_cm=vacio, distancia_lleno_cm=lleno))
             guardar(f"Contenedor {contenedor.codigo} creado y vinculado al dispositivo {identificador}.")
     return redirect(url_for("admin.punto_formulario", punto_id=punto.id))
 
@@ -224,6 +227,8 @@ def contenedor_formulario(contenedor_id):
             flash(str(error), "danger")
         else:
             identificador = valores.pop("identificador")
+            vacio = valores.pop("distancia_vacio_cm", dispositivo.distancia_vacio_cm if dispositivo else 175.0)
+            lleno = valores.pop("distancia_lleno_cm", dispositivo.distancia_lleno_cm if dispositivo else 25.0)
             if _codigo_ocupado(valores["codigo"], contenedor.id):
                 flash("Ya existe otro contenedor con ese código.", "danger")
             elif _identificador_ocupado(identificador, dispositivo.id if dispositivo else None):
@@ -236,6 +241,8 @@ def contenedor_formulario(contenedor_id):
                     db.session.add(dispositivo)
                 dispositivo.identificador = identificador
                 dispositivo.activo = request.form.get("dispositivo_activo") == "1"
+                dispositivo.distancia_vacio_cm = vacio
+                dispositivo.distancia_lleno_cm = lleno
                 if guardar("Contenedor actualizado."):
                     return redirect(url_for("admin.punto_formulario", punto_id=contenedor.punto_id))
     materiales = db.session.scalars(db.select(Material).order_by(Material.nombre)).all()

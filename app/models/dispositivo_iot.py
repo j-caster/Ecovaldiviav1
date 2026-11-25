@@ -24,6 +24,10 @@ class DispositivoIoT(db.Model):
     ultima_actualizacion = db.Column(db.DateTime)
     contador_lleno = db.Column(db.Integer, nullable=False, default=0, server_default="0")
     boot_confirmacion = db.Column(db.String(100))
+    # Calibración del contenedor físico: distancia (cm) al fondo cuando está
+    # vacío y cuando está lleno. Cada contenedor puede tener la suya.
+    distancia_vacio_cm = db.Column(db.Float, nullable=False, default=175.0)
+    distancia_lleno_cm = db.Column(db.Float, nullable=False, default=25.0)
 
     contenedor = db.relationship("Contenedor", back_populates="dispositivos")
     mediciones = db.relationship("Medicion", back_populates="dispositivo")

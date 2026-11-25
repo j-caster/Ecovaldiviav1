@@ -41,12 +41,28 @@ def validar_contenedor(datos):
     """Validar el contenedor y el identificador del dispositivo IoT que lo reporta.
 
     El identificador lo escribe el administrador y debe ser único en el sistema.
+    Incluye la calibración física del dispositivo: distancia al fondo en vacío y
+    en lleno, usadas para convertir la lectura del sensor en porcentaje.
     """
     resultado = {
         "codigo": texto(datos, "codigo", "El código del contenedor", 100),
         "identificador": texto(datos, "identificador", "El identificador del dispositivo IoT", 100),
         "activo": datos.get("activo", "1") == "1",
     }
+    vacio_raw = (datos.get("distancia_vacio_cm") or "").strip()
+    lleno_raw = (datos.get("distancia_lleno_cm") or "").strip()
+    if vacio_raw or lleno_raw:
+        try:
+            vacio = float(vacio_raw)
+            lleno = float(lleno_raw)
+        except (ValueError, TypeError):
+            raise ValueError("Las distancias de calibración deben ser números válidos.") from None
+        if not isfinite(vacio) or not isfinite(lleno) or vacio <= 0 or lleno <= 0:
+            raise ValueError("Las distancias de calibración deben ser mayores que 0.")
+        if vacio <= lleno:
+            raise ValueError("La distancia de vacío debe ser mayor que la de lleno.")
+        resultado["distancia_vacio_cm"] = vacio
+        resultado["distancia_lleno_cm"] = lleno
     material = (datos.get("material_id") or "").strip()
     if material:
         try:

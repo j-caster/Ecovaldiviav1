@@ -42,6 +42,18 @@
             <input class="form-check-input" type="checkbox" id="dispositivo_activo" name="dispositivo_activo" value="1" {% if dispositivo is none or dispositivo.activo %}checked{% endif %}>
             <label class="form-check-label" for="dispositivo_activo">Dispositivo habilitado para reportar lecturas</label>
         </div>
+        <div class="row mb-3">
+            <div class="col-6">
+                <label class="form-label" for="distancia_vacio_cm">Distancia vacío (cm)</label>
+                <input class="form-control" type="number" step="0.1" min="0" id="distancia_vacio_cm" name="distancia_vacio_cm" value="{{ '%.1f'|format(dispositivo.distancia_vacio_cm if dispositivo else 175.0) }}" required>
+                <p class="form-text">Distancia del sensor al fondo con el contenedor vacío.</p>
+            </div>
+            <div class="col-6">
+                <label class="form-label" for="distancia_lleno_cm">Distancia lleno (cm)</label>
+                <input class="form-control" type="number" step="0.1" min="0" id="distancia_lleno_cm" name="distancia_lleno_cm" value="{{ '%.1f'|format(dispositivo.distancia_lleno_cm if dispositivo else 25.0) }}" required>
+                <p class="form-text">Distancia del sensor al fondo con el contenedor lleno.</p>
+            </div>
+        </div>
         {% if dispositivo %}
         <p class="small text-secondary mb-0">Última lectura recibida: {{ dispositivo.ultima_actualizacion|fecha_chile }}</p>
         {% else %}

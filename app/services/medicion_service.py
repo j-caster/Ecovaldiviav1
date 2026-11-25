@@ -17,8 +17,6 @@ from app.models import DispositivoIoT, Medicion
 from app.services.operacion_service import asegurar_alerta_llenado
 from app.services.confirmacion_service import confirmar_llenado
 
-DISTANCIA_VACIO_CM = 175
-DISTANCIA_LLENO_CM = 25
 UMBRAL_MEDIO = 50
 UMBRAL_CASI_LLENO = 80
 MODOS = ("AUTO", "MANUAL")
@@ -73,13 +71,21 @@ def texto(valor, campo, limite, requerido=True):
     return valor.strip()
 
 
-def calcular_llenado(sensor1_cm, sensor2_cm):
-    """Retornar porcentaje y estado a partir del promedio de dos distancias."""
+def calcular_llenado(sensor1_cm, sensor2_cm, vacio_cm, lleno_cm):
+    """Retornar porcentaje y estado a partir del promedio de dos distancias.
+
+    `vacio_cm` y `lleno_cm` son la calibración del contenedor físico: distancia
+    desde el sensor al fondo cuando está vacío y cuando está lleno.
+    """
     s1 = numero_positivo(sensor1_cm, "sensor1_cm")
     s2 = numero_positivo(sensor2_cm, "sensor2_cm")
+    vacio = numero_positivo(vacio_cm, "vacio_cm")
+    lleno = numero_positivo(lleno_cm, "lleno_cm")
+    if vacio <= lleno:
+        raise ValueError("La distancia de vacío debe ser mayor que la de lleno.")
     distancia = s1 / 2 + s2 / 2
-    porcentaje = max(0.0, min(100.0, (DISTANCIA_VACIO_CM - distancia)
-                             / (DISTANCIA_VACIO_CM - DISTANCIA_LLENO_CM) * 100))
+    porcentaje = max(0.0, min(100.0, (vacio - distancia)
+                             / (vacio - lleno) * 100))
     if porcentaje == 100:
         estado = "Lleno"
     elif porcentaje >= UMBRAL_CASI_LLENO:
@@ -101,11 +107,18 @@ def procesar_medicion(datos):
     identificador = texto(datos.get("dispositivo_identificador"), "dispositivo_identificador", 100)
     valores = {campo: numero_positivo(datos.get(campo), campo)
                for campo in ("sensor1_cm", "sensor2_cm")}
-    for campo, permitidos in (("modo", MODOS), ("compuerta", COMPUERTAS), ("fuente", FUENTES)):
+    for campo, permitidos in (("modo", MODOS), ("compuerta", COMPUERTAS)):
         valor = datos.get(campo)
-        if valor not in permitidos:
+        if valor is None or valor == "":
+            valores[campo] = None
+        elif valor not in permitidos:
             raise ValueError(f"{campo} debe ser uno de: {', '.join(permitidos)}.")
-        valores[campo] = valor
+        else:
+            valores[campo] = valor
+    fuente = datos.get("fuente")
+    if fuente not in FUENTES:
+        raise ValueError(f"fuente debe ser uno de: {', '.join(FUENTES)}.")
+    valores["fuente"] = fuente
     boot = datos.get("boot")
     if valores["fuente"] == "SIMULACION" and boot in (None, ""):
         boot = f"sim-{uuid4().hex}"
@@ -130,8 +143,6 @@ def procesar_medicion(datos):
     if fecha.tzinfo is not None:
         fecha = fecha.astimezone(timezone.utc).replace(tzinfo=None)
     valores["recibida_en"] = fecha
-    valores["porcentaje_llenado"], valores["estado_calculado"] = calcular_llenado(
-        valores["sensor1_cm"], valores["sensor2_cm"])
 
     dispositivo = db.session.scalar(db.select(DispositivoIoT).where(
         DispositivoIoT.identificador == identificador))
@@ -145,6 +156,9 @@ def procesar_medicion(datos):
         Medicion.boot == valores["boot"], Medicion.seq == valores["seq"]))
     if duplicado is not None:
         raise ValueError("Medición duplicada para dispositivo, boot y seq.")
+    valores["porcentaje_llenado"], valores["estado_calculado"] = calcular_llenado(
+        valores["sensor1_cm"], valores["sensor2_cm"],
+        dispositivo.distancia_vacio_cm, dispositivo.distancia_lleno_cm)
     valores["estado_calculado"], contador_lleno = confirmar_llenado(
         valores["porcentaje_llenado"], valores["estado_calculado"], valores["boot"],
         dispositivo.boot_confirmacion, dispositivo.contador_lleno)

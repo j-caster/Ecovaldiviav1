@@ -29,10 +29,18 @@ class CalculoTests(unittest.TestCase):
             (100.01, (175 - 100.01) / 150 * 100, "Disponible"),
         ):
             with self.subTest(distancia=distancia):
-                resultado, etiqueta = calcular_llenado(distancia, distancia)
+                resultado, etiqueta = calcular_llenado(distancia, distancia, 175, 25)
                 self.assertAlmostEqual(resultado, porcentaje)
                 self.assertEqual(etiqueta, estado)
-        self.assertEqual(calcular_llenado(75, 125), (50, "Medio"))
+        self.assertEqual(calcular_llenado(75, 125, 175, 25), (50, "Medio"))
+
+    def test_calibracion_personalizada(self):
+        # Prototipo con sensor a 47 cm del fondo y lleno a 17 cm.
+        self.assertEqual(calcular_llenado(47, 47, 47, 17), (0, "Disponible"))
+        self.assertEqual(calcular_llenado(17, 17, 47, 17), (100, "Lleno"))
+        self.assertEqual(calcular_llenado(32, 32, 47, 17), (50, "Medio"))
+        with self.assertRaises(ValueError):
+            calcular_llenado(20, 20, 17, 47)  # vacío no puede ser <= lleno
 
 
 class MedicionTests(unittest.TestCase):
@@ -116,6 +124,14 @@ class MedicionTests(unittest.TestCase):
         procesar_medicion(self.datos(seq=1))
         procesar_medicion(self.datos(boot="arranque-2", seq=0))
         self.assertEqual(self.cantidad(), 2)
+
+    def test_calibracion_por_dispositivo(self):
+        self.dispositivo.distancia_vacio_cm = 47
+        self.dispositivo.distancia_lleno_cm = 17
+        db.session.commit()
+        medicion = procesar_medicion(self.datos(sensor1_cm=32, sensor2_cm=32))
+        self.assertEqual((medicion.porcentaje_llenado, medicion.estado_calculado), (50, "Medio"))
+        self.assertEqual(self.dispositivo.contenedor.porcentaje_llenado, 50)
 
     def test_simulacion_y_dispositivos_inactivos(self):
         medicion = procesar_medicion(self.datos(fuente="SIMULACION", boot=None, last_cmd_ctr=None))
